@@ -14,6 +14,8 @@ The scarcity of high-quality, labeled retinal imaging data presents a significan
 
 Visit our [project page](scr/video720.mov) to watch the demonstration video.
 
+[Demo Explanation Video on Bilibili: [RetinaLogos](https://www.bilibili.com/video/BV1HjKoz8EAE?vd_source=9dd9484226597b4482870629a0c4eba7)
+
 ## 💡 Highlights 
 
 - **Large-Scale Synthetic Dataset**: We have developed **RetinaLogos-1400k**, a synthetic dataset containing 1.4 million retinal caption-image pairs. This enables the generation of high-resolution, clinically relevant Color Fundus Photographs (CFPs) across a wide range of retinal conditions.
