@@ -1,6 +1,6 @@
 # RetinaLogos: Fine-Grained Synthesis of High-Resolution Retinal Images Through Captions
 
-[![x](https://img.shields.io/badge/cs.CV-2310.15161-b31b1b?logo=arxiv&logoColor=red)](https://arxiv.org/abs/2505.12887v1)
+[![x](https://img.shields.io/badge/cs.CV-2310.15161-b31b1b?logo=arxiv&logoColor=red)](https://arxiv.org/pdf/2505.12887v1) (Not Updated)
 
 
 This Repo presents the implementation of **RetinaLogos: Fine-Grained Synthesis of High-Resolution Retinal Images Through Captions**, a novel method designed to generate high-resolution Color Fundus Photographs (CFPs) from textual descriptions of retinal conditions. Our method addresses the limitations of existing retinal image synthesis models by providing more detailed and fine-grained control over anatomical structures and disease progression using large-scale text-to-image generation techniques.
