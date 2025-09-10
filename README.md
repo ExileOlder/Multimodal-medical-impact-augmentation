@@ -1,6 +1,6 @@
 # RetinaLogos: Fine-Grained Synthesis of High-Resolution Retinal Images Through Captions
 
-[![x](https://img.shields.io/badge/cs.CV-2505.12887-b31b1b?logo=arxiv&logoColor=red)](https://arxiv.org/abs/2505.12887)
+[![x](https://img.shields.io/badge/cs.CV-2505.12887-b31b1b?logo=arxiv&logoColor=red)](https://papers.miccai.org/miccai-2025/paper/0673_paper.pdf)
 
 
 This Repo presents the implementation of **RetinaLogos: Fine-Grained Synthesis of High-Resolution Retinal Images Through Captions**, a novel method designed to generate high-resolution Color Fundus Photographs (CFPs) from textual descriptions of retinal conditions. Our method addresses the limitations of existing retinal image synthesis models by providing more detailed and fine-grained control over anatomical structures and disease progression using large-scale text-to-image generation techniques.
@@ -71,10 +71,14 @@ We would like to express our gratitude to the authors of the **Lumina-Next** fra
 ## ✨ Citation
 If you use RetinaLogos in your research, please cite:
 ```
-@article{ning2025retinalogos,
-  title={RetinaLogos: Fine-Grained Synthesis of High-Resolution Retinal Images Through Captions},
-  author={Ning, Junzhi and Tang, Cheng and Zhou, Kaijin and Song, Diping and Liu, Lihao and Hu, Ming and Li, Wei and Su, Yanzhou and Li, Tianbing and Liu, Jiyao and others},
-  journal={arXiv preprint arXiv:2505.12887},
-  year={2025}
+@InProceedings{NinJun_RetinaLogos_MICCAI2025,
+        author = { Ning, Junzhi and Tang, Cheng and Zhou, Kaijing and Song, Diping and Liu, Lihao and Hu, Ming and Li, Wei and Xu, Huihui and Su, Yanzhou and Li, Tianbin and Liu, Jiyao and Ye, Jin and Zhang, Sheng and Ji, Yuanfeng and He, Junjun},
+        title = { { RetinaLogos: Fine-Grained Synthesis of High-Resolution Retinal Images Through Captions } },
+        booktitle = {proceedings of Medical Image Computing and Computer Assisted Intervention -- MICCAI 2025},
+        year = {2025},
+        publisher = {Springer Nature Switzerland},
+        volume = {LNCS 15975},
+        month = {September},
+        page = {474 -- 484}
 }
 ```
