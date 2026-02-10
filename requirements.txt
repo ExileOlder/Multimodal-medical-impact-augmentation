@@ -1,0 +1,30 @@
+# Core Dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0
+pillow>=10.0.0
+pyyaml>=6.0
+
+# Flash Attention 2 (A100 Optimization - 2-3x speedup)
+flash-attn>=2.0.0
+
+# Web Interface
+gradio>=4.0.0
+
+# Data Processing
+scikit-image>=0.21.0
+opencv-python>=4.8.0
+
+# Evaluation Metrics
+torchmetrics>=1.0.0
+
+# Progress Bar
+tqdm>=4.65.0
+
+# Testing (Optional)
+pytest>=7.4.0
+hypothesis>=6.82.0
+
+# Utilities
+einops>=0.7.0
+safetensors>=0.4.0

@@ -1,0 +1,39 @@
+# Inference Configuration for Medical Image Augmentation System
+
+# Model Configuration
+model:
+  checkpoint_path: "checkpoints/best_model.pth"  # Path to trained model
+  device: "cuda"                                  # cuda or cpu
+  use_flash_attn: true                           # Enable Flash Attention 2
+
+# Generation Configuration
+generation:
+  image_size: 1024               # Output image resolution
+  num_inference_steps: 50        # Number of sampling steps (DDPM/DDIM)
+  guidance_scale: 7.5            # Classifier-free guidance strength
+  sampler: "ddim"                # Sampling algorithm: ddpm, ddim
+  
+  # Batch Generation
+  batch_size: 4                  # Number of images to generate in parallel
+  num_samples: 1                 # Number of samples per prompt
+  
+  # Seed Configuration
+  seed: null                     # Random seed (null for random)
+  
+# Output Configuration
+output:
+  output_dir: "results"          # Directory to save generated images
+  save_metadata: true            # Save generation parameters as JSON
+  image_format: "png"            # Output image format
+
+# Text Configuration
+text:
+  max_length: 77                 # Maximum text token length
+  
+# Label-to-Caption Mapping (DR Grading)
+dr_grade_mapping:
+  0: "No diabetic retinopathy"
+  1: "Mild non-proliferative diabetic retinopathy"
+  2: "Moderate non-proliferative diabetic retinopathy"
+  3: "Severe non-proliferative diabetic retinopathy"
+  4: "Proliferative diabetic retinopathy"

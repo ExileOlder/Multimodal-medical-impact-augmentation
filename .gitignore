@@ -11,6 +11,10 @@
 # Results and outputs
 **/results/**
 **/.DS_Store/**
+checkpoints/
+logs/
+examples/*.png
+examples/*.jpg
 
 # Environment
 .env

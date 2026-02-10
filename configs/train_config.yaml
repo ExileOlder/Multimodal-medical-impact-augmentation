@@ -1,0 +1,58 @@
+# Training Configuration for Medical Image Augmentation System
+
+# Data Configuration
+data:
+  train_data_path: "data/train"  # Path to training JSONL files
+  val_data_path: "data/val"      # Path to validation JSONL files
+  image_size: 1024               # Target image resolution
+  batch_size: 32                 # Batch size (adjust based on A100 memory)
+  num_workers: 8                 # Number of data loading workers
+  
+# Model Configuration
+model:
+  model_name: "NextDiT"
+  in_channels: 3                 # RGB input
+  mask_channels: 1               # Single channel mask
+  hidden_size: 1152              # Model hidden dimension
+  depth: 28                      # Number of transformer layers
+  num_heads: 16                  # Number of attention heads
+  patch_size: 2                  # Patch size for patchify
+  use_flash_attn: true           # Enable Flash Attention 2 (A100 optimization)
+
+# Training Configuration
+training:
+  num_epochs: 100
+  learning_rate: 1.0e-4
+  weight_decay: 0.0
+  warmup_steps: 1000
+  gradient_clip: 1.0
+  
+  # Mixed Precision Training (A100 optimization)
+  use_amp: true
+  amp_dtype: "bfloat16"          # Use BF16 on A100 for best performance
+  
+  # Checkpointing
+  save_every: 5                  # Save checkpoint every N epochs
+  checkpoint_dir: "checkpoints"
+  resume_from: null              # Path to checkpoint to resume from
+  
+  # Logging
+  log_every: 100                 # Log every N steps
+  log_dir: "logs"
+
+# Loss Configuration (Flow Matching / Rectified Flow)
+loss:
+  type: "flow_matching"          # Use transport module from codes/transport
+  weighting: "uniform"           # Loss weighting strategy
+
+# Optimizer Configuration
+optimizer:
+  type: "AdamW"
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+
+# Learning Rate Scheduler
+scheduler:
+  type: "cosine"
+  min_lr: 1.0e-6
+  warmup_type: "linear"

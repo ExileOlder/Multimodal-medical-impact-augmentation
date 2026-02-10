@@ -1,0 +1,59 @@
+# Fast Training Configuration (24 hours target)
+# 针对快速训练优化的配置
+
+# Data Configuration
+data:
+  train_data_path: "data"
+  val_data_path: "data"
+  image_size: 512              # ⚡ 从 1024 降到 512 (4x 加速)
+  batch_size: 64               # ⚡ 增大批次 (A100 可支持)
+  num_workers: 8
+
+# Model Configuration
+model:
+  model_name: "NextDiT"
+  in_channels: 3
+  mask_channels: 1
+  hidden_size: 1152            # ⚡ 从 2304 降到 1152 (更小模型)
+  depth: 16                    # ⚡ 从 24 降到 16 (更少层)
+  num_heads: 16
+  patch_size: 2
+  use_flash_attn: true
+
+# Training Configuration
+training:
+  num_epochs: 30               # ⚡ 从 100 降到 30
+  learning_rate: 2.0e-4        # ⚡ 提高学习率加速收敛
+  weight_decay: 0.0
+  warmup_steps: 500            # ⚡ 减少 warmup
+  gradient_clip: 1.0
+  
+  # Mixed Precision Training (A100 optimization)
+  use_amp: true
+  amp_dtype: "bfloat16"
+  
+  # Checkpointing
+  save_every: 5
+  checkpoint_dir: "checkpoints"
+  resume_from: null
+  
+  # Logging
+  log_every: 50
+  log_dir: "logs"
+
+# Loss Configuration (Flow Matching / Rectified Flow)
+loss:
+  type: "flow_matching"
+  weighting: "uniform"
+
+# Optimizer Configuration
+optimizer:
+  type: "AdamW"
+  betas: [0.9, 0.999]
+  eps: 1.0e-8
+
+# Learning Rate Scheduler
+scheduler:
+  type: "cosine"
+  min_lr: 1.0e-6
+  warmup_type: "linear"
