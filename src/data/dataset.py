@@ -22,7 +22,12 @@ class MultimodalDataset(Dataset):
         data_list: List[Dict],
         image_size: Tuple[int, int] = (1024, 1024),
         normalize: bool = True,
-        auto_caption: bool = True
+        auto_caption: bool = True,
+        enable_denoising: bool = False,
+        denoising_method: str = "gaussian",
+        gaussian_kernel_size: int = 5,
+        gaussian_sigma: float = 1.0,
+        median_kernel_size: int = 5
     ):
         """
         Initialize dataset.
@@ -32,11 +37,21 @@ class MultimodalDataset(Dataset):
             image_size: Target image resolution
             normalize: Whether to normalize images to [-1, 1]
             auto_caption: Whether to convert numeric labels to text captions
+            enable_denoising: Whether to apply denoising (default: False)
+            denoising_method: Denoising method - "gaussian" or "median"
+            gaussian_kernel_size: Kernel size for Gaussian filter
+            gaussian_sigma: Sigma for Gaussian filter
+            median_kernel_size: Kernel size for median filter
         """
         self.data_list = data_list
         self.image_size = image_size
         self.normalize = normalize
         self.auto_caption = auto_caption
+        self.enable_denoising = enable_denoising
+        self.denoising_method = denoising_method
+        self.gaussian_kernel_size = gaussian_kernel_size
+        self.gaussian_sigma = gaussian_sigma
+        self.median_kernel_size = median_kernel_size
         
     def __len__(self) -> int:
         return len(self.data_list)
@@ -58,7 +73,12 @@ class MultimodalDataset(Dataset):
         image = preprocess_image(
             entry['image_path'],
             target_size=self.image_size,
-            normalize=self.normalize
+            normalize=self.normalize,
+            enable_denoising=self.enable_denoising,
+            denoising_method=self.denoising_method,
+            gaussian_kernel_size=self.gaussian_kernel_size,
+            gaussian_sigma=self.gaussian_sigma,
+            median_kernel_size=self.median_kernel_size
         )
         
         # Get caption (with optional label-to-caption conversion)

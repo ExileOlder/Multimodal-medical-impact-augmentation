@@ -1,8 +1,16 @@
 # Inference Configuration for Medical Image Augmentation System
 
+# 路径说明 (Path Notes):
+# - 所有路径使用相对路径，相对于项目根目录
+# - 项目根目录应位于 /home/Backup/maziheng/medical-image-augmentation-system/
+# - 示例：相对路径 "checkpoints/best_model.pth" 对应绝对路径 "/home/Backup/maziheng/medical-image-augmentation-system/checkpoints/best_model.pth"
+# - All paths use relative paths, relative to the project root directory
+# - Project root should be located at /home/Backup/maziheng/medical-image-augmentation-system/
+# - Example: relative path "checkpoints/best_model.pth" corresponds to absolute path "/home/Backup/maziheng/medical-image-augmentation-system/checkpoints/best_model.pth"
+
 # Model Configuration
 model:
-  checkpoint_path: "checkpoints/best_model.pth"  # Path to trained model
+  checkpoint_path: "checkpoints/best_model.pth"  # Path to trained model (relative to project root)
   device: "cuda"                                  # cuda or cpu
   use_flash_attn: true                           # Enable Flash Attention 2
 
@@ -22,7 +30,7 @@ generation:
   
 # Output Configuration
 output:
-  output_dir: "results"          # Directory to save generated images
+  output_dir: "results"          # Directory to save generated images (relative to project root)
   save_metadata: true            # Save generation parameters as JSON
   image_format: "png"            # Output image format
 

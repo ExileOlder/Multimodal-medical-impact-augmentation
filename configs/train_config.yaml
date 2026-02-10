@@ -1,12 +1,29 @@
 # Training Configuration for Medical Image Augmentation System
 
+# 路径说明 (Path Notes):
+# - 所有路径使用相对路径，相对于项目根目录
+# - 项目根目录应位于 /home/Backup/maziheng/medical-image-augmentation-system/
+# - 示例：相对路径 "data/train" 对应绝对路径 "/home/Backup/maziheng/medical-image-augmentation-system/data/train"
+# - All paths use relative paths, relative to the project root directory
+# - Project root should be located at /home/Backup/maziheng/medical-image-augmentation-system/
+# - Example: relative path "data/train" corresponds to absolute path "/home/Backup/maziheng/medical-image-augmentation-system/data/train"
+
 # Data Configuration
 data:
-  train_data_path: "data/train"  # Path to training JSONL files
-  val_data_path: "data/val"      # Path to validation JSONL files
+  train_data_path: "data/train"  # Path to training JSONL files (relative to project root)
+  val_data_path: "data/val"      # Path to validation JSONL files (relative to project root)
   image_size: 1024               # Target image resolution
-  batch_size: 32                 # Batch size (adjust based on A100 memory)
-  num_workers: 8                 # Number of data loading workers
+  num_workers: 8                 # Number of data loading workers (充分利用 CPU 资源)
+  
+  # Denoising Configuration (噪声处理配置)
+  # Note: Medical image datasets are typically pre-processed, so denoising is disabled by default
+  # 注意：医学影像数据集通常已经过预处理，因此默认禁用去噪
+  enable_denoising: false        # Enable/disable image denoising (default: false)
+  denoising_method: "gaussian"   # Denoising method: "gaussian" or "median" (default: "gaussian")
+  gaussian_kernel_size: 5        # Kernel size for Gaussian filter (must be odd, default: 5)
+  gaussian_sigma: 1.0            # Sigma for Gaussian filter (default: 1.0)
+  median_kernel_size: 5          # Kernel size for median filter (must be odd, default: 5)
+  # Note: batch_size is configured in training section below
   
 # Model Configuration
 model:
@@ -27,18 +44,31 @@ training:
   warmup_steps: 1000
   gradient_clip: 1.0
   
+  # A100 优化配置 (A100 Optimization Configuration):
+  # 针对 1024x1024 高分辨率图像，使用小 batch_size + 梯度累积策略
+  # For 1024x1024 high-resolution images, use small batch_size + gradient accumulation
+  batch_size: 2                  # 针对 1024x1024 图像的安全值 (Safe value for 1024x1024 images)
+  gradient_accumulation_steps: 16  # 梯度累积步数 (Gradient accumulation steps)
+  
   # Mixed Precision Training (A100 optimization)
   use_amp: true
-  amp_dtype: "bfloat16"          # Use BF16 on A100 for best performance
+  mixed_precision: "bf16"        # A100 优化：使用 BF16 获得最佳性能 (A100 optimized: BF16 for best performance)
+  
+  # Effective Batch Size 计算说明 (Effective Batch Size Calculation):
+  # Effective Batch Size = batch_size × gradient_accumulation_steps
+  # 当前配置 (Current config): 2 × 16 = 32
+  # 建议 (Recommendation): Effective Batch Size >= 32 以确保训练稳定
+  # 如果显存不足，可以减小 batch_size 并增加 gradient_accumulation_steps
+  # Example: batch_size=1, gradient_accumulation_steps=32 → Effective Batch Size=32
   
   # Checkpointing
   save_every: 5                  # Save checkpoint every N epochs
-  checkpoint_dir: "checkpoints"
+  checkpoint_dir: "checkpoints"  # Checkpoint directory (relative to project root)
   resume_from: null              # Path to checkpoint to resume from
   
   # Logging
   log_every: 100                 # Log every N steps
-  log_dir: "logs"
+  log_dir: "logs"                # Log directory (relative to project root)
 
 # Loss Configuration (Flow Matching / Rectified Flow)
 loss:

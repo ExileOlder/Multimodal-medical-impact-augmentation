@@ -5,6 +5,7 @@ from PIL import Image
 import torch
 import torch.nn.functional as F
 from typing import Tuple, Optional, Union
+import cv2
 
 
 # DR Grade to Caption Mapping (Label-to-Caption for text modality)
@@ -43,21 +44,91 @@ def label_to_caption(label: Union[int, str], grade_mapping: dict = None) -> str:
     return grade_mapping.get(label, f"Unknown grade: {label}")
 
 
+def apply_gaussian_filter(
+    image: np.ndarray,
+    kernel_size: int = 5,
+    sigma: float = 1.0
+) -> np.ndarray:
+    """
+    Apply Gaussian filter for image denoising.
+    
+    Gaussian filtering is effective for reducing Gaussian noise while preserving edges.
+    Commonly used in medical image preprocessing.
+    
+    Args:
+        image: Input image as numpy array (H, W, C) or (H, W)
+        kernel_size: Size of the Gaussian kernel (must be odd). Default: 5
+        sigma: Standard deviation of the Gaussian kernel. Default: 1.0
+        
+    Returns:
+        Denoised image as numpy array with same shape as input
+    """
+    # Ensure kernel_size is odd
+    if kernel_size % 2 == 0:
+        kernel_size += 1
+    
+    # Apply Gaussian blur
+    denoised = cv2.GaussianBlur(image, (kernel_size, kernel_size), sigma)
+    
+    return denoised
+
+
+def apply_median_filter(
+    image: np.ndarray,
+    kernel_size: int = 5
+) -> np.ndarray:
+    """
+    Apply median filter for image denoising.
+    
+    Median filtering is particularly effective for removing salt-and-pepper noise
+    while preserving edges. Useful for medical images with impulse noise.
+    
+    Args:
+        image: Input image as numpy array (H, W, C) or (H, W)
+        kernel_size: Size of the median filter kernel (must be odd). Default: 5
+        
+    Returns:
+        Denoised image as numpy array with same shape as input
+    """
+    # Ensure kernel_size is odd
+    if kernel_size % 2 == 0:
+        kernel_size += 1
+    
+    # Apply median filter
+    denoised = cv2.medianBlur(image, kernel_size)
+    
+    return denoised
+
+
 def preprocess_image(
     image: Union[Image.Image, np.ndarray, str],
     target_size: Tuple[int, int] = (1024, 1024),
-    normalize: bool = True
+    normalize: bool = True,
+    enable_denoising: bool = False,
+    denoising_method: str = "gaussian",
+    gaussian_kernel_size: int = 5,
+    gaussian_sigma: float = 1.0,
+    median_kernel_size: int = 5
 ) -> torch.Tensor:
     """
-    Preprocess image: resize and normalize.
+    Preprocess image: resize, optional denoising, and normalize.
     
     Args:
         image: PIL Image, numpy array, or path to image file
         target_size: Target resolution (height, width)
         normalize: Whether to normalize pixel values to [-1, 1]
+        enable_denoising: Whether to apply denoising (default: False)
+        denoising_method: Denoising method - "gaussian" or "median" (default: "gaussian")
+        gaussian_kernel_size: Kernel size for Gaussian filter (default: 5)
+        gaussian_sigma: Sigma for Gaussian filter (default: 1.0)
+        median_kernel_size: Kernel size for median filter (default: 5)
         
     Returns:
         Preprocessed image tensor of shape (C, H, W)
+        
+    Note:
+        Medical image datasets are typically pre-processed, so denoising is disabled
+        by default. Enable it only if your dataset contains noisy images.
     """
     # Load image if path is provided
     if isinstance(image, str):
@@ -74,8 +145,27 @@ def preprocess_image(
     # Resize to target resolution
     image = image.resize(target_size, Image.LANCZOS)
     
+    # Convert to numpy array for optional denoising
+    image_np = np.array(image)
+    
+    # Apply denoising if enabled
+    if enable_denoising:
+        if denoising_method == "gaussian":
+            image_np = apply_gaussian_filter(
+                image_np,
+                kernel_size=gaussian_kernel_size,
+                sigma=gaussian_sigma
+            )
+        elif denoising_method == "median":
+            image_np = apply_median_filter(
+                image_np,
+                kernel_size=median_kernel_size
+            )
+        else:
+            print(f"Warning: Unknown denoising method '{denoising_method}', skipping denoising")
+    
     # Convert to tensor (C, H, W) with values in [0, 1]
-    image_tensor = torch.from_numpy(np.array(image)).permute(2, 0, 1).float() / 255.0
+    image_tensor = torch.from_numpy(image_np).permute(2, 0, 1).float() / 255.0
     
     # Normalize to [-1, 1] if requested
     if normalize:

@@ -1,30 +1,132 @@
-# Core Dependencies
-torch>=2.0.0
-torchvision>=0.15.0
-numpy>=1.24.0
-pillow>=10.0.0
-pyyaml>=6.0
+# ============================================================================
+# Medical Image Augmentation System - Dependencies
+# ============================================================================
+# 
+# Installation Instructions:
+# 1. Install core dependencies: pip install -r requirements.txt
+# 2. Install flash-attn manually (see below)
+# 3. Run dependency check: python scripts/check_dependencies.py
+#
+# Note: This file is manually maintained to avoid version conflicts.
+# Do not use automated dependency management tools.
+# ============================================================================
 
-# Flash Attention 2 (A100 Optimization - 2-3x speedup)
-flash-attn>=2.0.0
+# ----------------------------------------------------------------------------
+# Core Deep Learning Framework
+# ----------------------------------------------------------------------------
+torch>=2.0.0,<3.0.0          # PyTorch - Core deep learning framework
+torchvision>=0.15.0,<1.0.0   # Computer vision utilities for PyTorch
+numpy>=1.24.0,<2.0.0         # Numerical computing library
+einops>=0.7.0,<1.0.0         # Tensor operations made easy
 
+# ----------------------------------------------------------------------------
+# Image Processing
+# ----------------------------------------------------------------------------
+Pillow>=10.0.0,<11.0.0       # Python Imaging Library
+opencv-python>=4.8.0,<5.0.0  # Computer vision library
+scikit-image>=0.21.0,<1.0.0  # Image processing algorithms
+
+# ----------------------------------------------------------------------------
+# Data Processing and Utilities
+# ----------------------------------------------------------------------------
+PyYAML>=6.0,<7.0             # YAML parser for config files
+tqdm>=4.65.0,<5.0.0          # Progress bars
+scipy>=1.10.0,<2.0.0         # Scientific computing
+
+# ----------------------------------------------------------------------------
 # Web Interface
-gradio>=4.0.0
+# ----------------------------------------------------------------------------
+gradio>=4.0.0,<6.0.0         # Web UI for model demo
 
-# Data Processing
-scikit-image>=0.21.0
-opencv-python>=4.8.0
+# ----------------------------------------------------------------------------
+# Model Utilities
+# ----------------------------------------------------------------------------
+safetensors>=0.4.0,<1.0.0    # Safe tensor serialization
 
+# ----------------------------------------------------------------------------
 # Evaluation Metrics
-torchmetrics>=1.0.0
+# ----------------------------------------------------------------------------
+torchmetrics>=1.0.0,<2.0.0   # PyTorch metrics library
+lpips>=0.1.4,<1.0.0          # Perceptual similarity metric (optional)
 
-# Progress Bar
-tqdm>=4.65.0
+# ----------------------------------------------------------------------------
+# Monitoring and Logging
+# ----------------------------------------------------------------------------
+tensorboard>=2.13.0,<3.0.0   # Training visualization
 
-# Testing (Optional)
-pytest>=7.4.0
-hypothesis>=6.82.0
+# ----------------------------------------------------------------------------
+# Testing (Optional - for development only)
+# ----------------------------------------------------------------------------
+pytest>=7.4.0,<8.0.0         # Testing framework
 
-# Utilities
-einops>=0.7.0
-safetensors>=0.4.0
+# ============================================================================
+# MANUAL INSTALLATION REQUIRED
+# ============================================================================
+#
+# Flash Attention 2 (A100 Optimization - 2-3x speedup)
+# ----------------------------------------------------------------------------
+# Flash-attn requires manual compilation and cannot be installed via pip
+# in a standard way. It needs CUDA development tools.
+#
+# Installation command:
+#   pip install flash-attn --no-build-isolation
+#
+# Requirements:
+#   - CUDA 11.8 or higher
+#   - PyTorch 2.0 or higher
+#   - GCC 7 or higher
+#   - NVIDIA GPU with compute capability 7.5+ (A100 is 8.0)
+#
+# Verification:
+#   python -c "import flash_attn; print(flash_attn.__version__)"
+#
+# If installation fails:
+#   - Check CUDA version: nvcc --version
+#   - Check GCC version: gcc --version
+#   - The model will fall back to standard attention (slower but functional)
+#
+# Expected version: flash-attn>=2.0.0
+# ============================================================================
+
+# ============================================================================
+# REMOVED DEPENDENCIES (from old RetinaLogos environment)
+# ============================================================================
+# The following packages were removed as they are not needed for this project:
+#
+# - hypothesis: Property-based testing (over-engineering for this project)
+# - accelerate: Hugging Face training utilities (not used)
+# - transformers: Hugging Face transformers (using custom model)
+# - diffusers: Hugging Face diffusion models (using custom implementation)
+# - datasets: Hugging Face datasets (using custom data loader)
+# - jupyter/notebook: Development tools (install separately if needed)
+# - boto3/s3transfer: AWS utilities (not needed)
+# - fairscale: Distributed training (single GPU setup)
+# - peft: Parameter-efficient fine-tuning (not used)
+# - qwen-vl-utils: Qwen model utilities (not used)
+# - Various development tools: ipdb, ruff, pipreqs, etc.
+#
+# If you need any of these packages, install them separately.
+# ============================================================================
+
+# ============================================================================
+# DEPENDENCY CATEGORIES SUMMARY
+# ============================================================================
+# Core Framework:     torch, torchvision, numpy, einops
+# Image Processing:   Pillow, opencv-python, scikit-image
+# Data Processing:    PyYAML, tqdm, scipy
+# Web Interface:      gradio
+# Model Utilities:    safetensors
+# Evaluation:         torchmetrics, lpips
+# Monitoring:         tensorboard
+# Testing:            pytest
+# Manual Install:     flash-attn (see instructions above)
+# ============================================================================
+
+# ============================================================================
+# VERSION COMPATIBILITY NOTES
+# ============================================================================
+# - PyTorch 2.0+ is required for bf16 mixed precision on A100
+# - CUDA 11.8+ is recommended for optimal A100 performance
+# - All version ranges are tested on A100 40GB GPU
+# - If you encounter version conflicts, check with: python scripts/check_dependencies.py
+# ============================================================================
