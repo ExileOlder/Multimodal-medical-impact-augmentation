@@ -318,7 +318,9 @@ python train_classifier.py \
 ```
 
 基于 RetinaLogos 项目：
+- Github: https://github.com/uni-medical/retina-text2cfp
 - GitHub: https://github.com/Alpha-VLLM/Lumina-T2X
+
 
 ## ⚠️ 免责声明
 
