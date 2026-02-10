@@ -16,7 +16,10 @@ from src.evaluation.metrics import (
     calculate_psnr,
     calculate_ssim_skimage,
     calculate_mae,
-    calculate_mse
+    calculate_mse,
+    calculate_dice_coefficient,
+    calculate_iou,
+    extract_lesion_mask_from_image
 )
 
 
@@ -30,7 +33,9 @@ class QualityEvaluator:
     def evaluate_pair(
         self,
         generated_path: str,
-        reference_path: str
+        reference_path: str,
+        input_mask_path: str = None,
+        evaluate_structure: bool = False
     ) -> dict:
         """
         Evaluate a single image pair.
@@ -38,6 +43,8 @@ class QualityEvaluator:
         Args:
             generated_path: Path to generated image
             reference_path: Path to reference image
+            input_mask_path: Path to input condition mask (optional, for structure consistency)
+            evaluate_structure: Whether to evaluate structure consistency
             
         Returns:
             Dict with metrics
@@ -55,7 +62,7 @@ class QualityEvaluator:
         gen_array = np.array(generated)
         ref_array = np.array(reference)
         
-        # Calculate metrics
+        # Calculate quality metrics
         psnr = calculate_psnr(gen_array, ref_array, max_value=255.0)
         ssim = calculate_ssim_skimage(gen_array, ref_array, max_value=255.0)
         mae = calculate_mae(gen_array, ref_array)
@@ -70,13 +77,47 @@ class QualityEvaluator:
             'mse': mse
         }
         
+        # Calculate structure consistency metrics if requested
+        if evaluate_structure and input_mask_path:
+            try:
+                # Load input mask
+                input_mask = Image.open(input_mask_path).convert('L')
+                if input_mask.size != generated.size:
+                    input_mask = input_mask.resize(generated.size, Image.NEAREST)
+                input_mask_array = np.array(input_mask)
+                
+                # Extract lesion mask from generated image
+                generated_mask = extract_lesion_mask_from_image(
+                    gen_array,
+                    method="red_channel",
+                    threshold=0.5
+                )
+                
+                # Convert to same scale
+                generated_mask = (generated_mask * 255).astype(np.uint8)
+                
+                # Calculate structure consistency metrics
+                dice = calculate_dice_coefficient(generated_mask, input_mask_array)
+                iou = calculate_iou(generated_mask, input_mask_array)
+                
+                result['dice_coefficient'] = dice
+                result['iou'] = iou
+                result['input_mask_path'] = str(input_mask_path)
+                
+            except Exception as e:
+                print(f"Warning: Failed to calculate structure metrics: {e}")
+                result['dice_coefficient'] = None
+                result['iou'] = None
+        
         return result
     
     def evaluate_batch(
         self,
         generated_dir: str,
         reference_dir: str,
-        pattern: str = "*.png"
+        mask_dir: str = None,
+        pattern: str = "*.png",
+        evaluate_structure: bool = False
     ) -> list:
         """
         Evaluate all images in a directory.
@@ -84,13 +125,18 @@ class QualityEvaluator:
         Args:
             generated_dir: Directory with generated images
             reference_dir: Directory with reference images
+            mask_dir: Directory with input condition masks (optional, for structure consistency)
             pattern: File pattern to match
+            evaluate_structure: Whether to evaluate structure consistency
             
         Returns:
             List of results
         """
         generated_dir = Path(generated_dir)
         reference_dir = Path(reference_dir)
+        
+        if mask_dir:
+            mask_dir = Path(mask_dir)
         
         # Find all generated images
         generated_files = sorted(generated_dir.glob(pattern))
@@ -100,6 +146,9 @@ class QualityEvaluator:
             return []
         
         print(f"Found {len(generated_files)} generated images")
+        
+        if evaluate_structure and mask_dir:
+            print(f"Structure consistency evaluation enabled (using masks from {mask_dir})")
         
         results = []
         
@@ -111,8 +160,21 @@ class QualityEvaluator:
                 print(f"Warning: Reference not found for {gen_path.name}, skipping")
                 continue
             
+            # Find corresponding mask if structure evaluation is enabled
+            mask_path = None
+            if evaluate_structure and mask_dir:
+                mask_path = mask_dir / gen_path.name
+                if not mask_path.exists():
+                    print(f"Warning: Mask not found for {gen_path.name}, skipping structure metrics")
+                    mask_path = None
+            
             try:
-                result = self.evaluate_pair(gen_path, ref_path)
+                result = self.evaluate_pair(
+                    gen_path,
+                    ref_path,
+                    input_mask_path=mask_path,
+                    evaluate_structure=evaluate_structure
+                )
                 results.append(result)
             except Exception as e:
                 print(f"Error evaluating {gen_path.name}: {e}")
@@ -165,6 +227,26 @@ class QualityEvaluator:
                     'max': np.max(mse_values)
                 }
             }
+            
+            # Add structure consistency metrics if available
+            dice_values = [r['dice_coefficient'] for r in self.results if r.get('dice_coefficient') is not None]
+            iou_values = [r['iou'] for r in self.results if r.get('iou') is not None]
+            
+            if dice_values:
+                summary['dice_coefficient'] = {
+                    'mean': np.mean(dice_values),
+                    'std': np.std(dice_values),
+                    'min': np.min(dice_values),
+                    'max': np.max(dice_values)
+                }
+            
+            if iou_values:
+                summary['iou'] = {
+                    'mean': np.mean(iou_values),
+                    'std': np.std(iou_values),
+                    'min': np.min(iou_values),
+                    'max': np.max(iou_values)
+                }
         else:
             summary = {'num_images': 0}
         
@@ -185,12 +267,26 @@ class QualityEvaluator:
             print("EVALUATION SUMMARY")
             print("="*70)
             print(f"Number of images: {summary['num_images']}")
-            print(f"\nPSNR: {summary['psnr']['mean']:.2f} ± {summary['psnr']['std']:.2f} dB")
+            print(f"\n【图像质量指标】")
+            print(f"PSNR: {summary['psnr']['mean']:.2f} ± {summary['psnr']['std']:.2f} dB")
             print(f"  Range: [{summary['psnr']['min']:.2f}, {summary['psnr']['max']:.2f}]")
             print(f"\nSSIM: {summary['ssim']['mean']:.4f} ± {summary['ssim']['std']:.4f}")
             print(f"  Range: [{summary['ssim']['min']:.4f}, {summary['ssim']['max']:.4f}]")
             print(f"\nMAE: {summary['mae']['mean']:.2f} ± {summary['mae']['std']:.2f}")
             print(f"MSE: {summary['mse']['mean']:.2f} ± {summary['mse']['std']:.2f}")
+            
+            # Print structure consistency metrics if available
+            if 'dice_coefficient' in summary:
+                print(f"\n【结构一致性指标】")
+                print(f"Dice Coefficient: {summary['dice_coefficient']['mean']:.4f} ± {summary['dice_coefficient']['std']:.4f}")
+                print(f"  Range: [{summary['dice_coefficient']['min']:.4f}, {summary['dice_coefficient']['max']:.4f}]")
+                print(f"  (1.0 = 完美匹配, >0.7 = 良好, >0.5 = 可接受)")
+            
+            if 'iou' in summary:
+                print(f"\nIoU (Jaccard Index): {summary['iou']['mean']:.4f} ± {summary['iou']['std']:.4f}")
+                print(f"  Range: [{summary['iou']['min']:.4f}, {summary['iou']['max']:.4f}]")
+                print(f"  (1.0 = 完美匹配, >0.5 = 良好, >0.3 = 可接受)")
+            
             print("="*70)
 
 
@@ -210,6 +306,12 @@ def main():
         help="Directory containing reference images"
     )
     parser.add_argument(
+        "--masks",
+        type=str,
+        default=None,
+        help="Directory containing input condition masks (for structure consistency evaluation)"
+    )
+    parser.add_argument(
         "--output",
         type=str,
         default="results/evaluation_results.json",
@@ -221,6 +323,11 @@ def main():
         default="*.png",
         help="File pattern to match (default: *.png)"
     )
+    parser.add_argument(
+        "--evaluate-structure",
+        action="store_true",
+        help="Enable structure consistency evaluation (requires --masks)"
+    )
     args = parser.parse_args()
     
     print("\n" + "="*70)
@@ -228,6 +335,10 @@ def main():
     print("="*70)
     print(f"Generated images: {args.generated}")
     print(f"Reference images: {args.reference}")
+    if args.masks:
+        print(f"Input masks: {args.masks}")
+    if args.evaluate_structure:
+        print(f"Structure consistency: ENABLED")
     print(f"Output file: {args.output}")
     print("="*70 + "\n")
     
@@ -238,7 +349,9 @@ def main():
     results = evaluator.evaluate_batch(
         generated_dir=args.generated,
         reference_dir=args.reference,
-        pattern=args.pattern
+        mask_dir=args.masks,
+        pattern=args.pattern,
+        evaluate_structure=args.evaluate_structure
     )
     
     if not results:

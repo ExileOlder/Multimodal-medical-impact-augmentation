@@ -1,14 +1,16 @@
 # 🏥 Medical Image Augmentation System
 
-基于 RetinaLogos 的医学影像增广系统，支持文本和分割掩码条件的糖尿病视网膜病变（DR）眼底图像生成。
+基于 Diffusion Transformer 的医学影像增广系统，支持文本和分割掩码条件的医学图像生成。本系统具有通用性，可应用于多种医学影像任务（如眼底图像、CT、MRI、病理切片等）。
 
 ## ✨ 特性
 
 - **多模态条件生成**：支持文本描述和分割掩码条件
+- **通用医学影像**：适用于眼底图像、CT、MRI、病理切片等多种医学影像
 - **Flow Matching 训练**：使用 Rectified Flow 进行高效训练
 - **A100 优化**：Flash Attention 2 + BF16 混合精度训练
+- **结构一致性验证**：Dice 系数和 IoU 评估生成图像与输入掩码的一致性
 - **Gradio 演示界面**：简洁易用的 Web 界面
-- **下游任务评估**：ResNet-50 分类实验验证增广价值
+- **下游任务评估**：分类实验验证增广价值
 
 ## 📋 目录
 
@@ -20,6 +22,7 @@
 - [推理](#推理)
 - [Gradio 演示](#gradio-演示)
 - [下游评估](#下游评估)
+- [评估指标详解](#评估指标详解)
 - [简化说明](#简化说明)
 
 ## 📁 项目结构
@@ -170,9 +173,16 @@ generator = ImageGenerator(
     device="cuda"
 )
 
-# 生成图像
+# 生成图像（示例：眼底图像）
 image = generator.generate(
-    caption="Severe diabetic retinopathy",
+    caption="Severe diabetic retinopathy with microaneurysms",
+    num_inference_steps=50,
+    guidance_scale=7.5
+)
+
+# 或生成其他医学影像（示例：CT 图像）
+image = generator.generate(
+    caption="Lung nodule, 5mm diameter, upper lobe",
     num_inference_steps=50,
     guidance_scale=7.5
 )
@@ -191,35 +201,84 @@ python src/app/demo.py --checkpoint checkpoints/best_model.pth
 
 ## 📊 数据准备
 
-### 推荐数据集：FGADR
+### 数据格式
 
-1. **下载数据集**
-   - GitHub: https://github.com/csyizhou/FGADR-2842-Dataset
-   - 包含 1,842 张高清眼底图和像素级病灶分割掩码
-
-2. **数据格式**
-
-创建 JSONL 格式的数据清单：
+本系统使用 JSONL 格式的数据清单，支持多种医学影像任务：
 
 ```jsonl
-{"image_path": "data/FGADR/images/001.png", "caption": "2", "mask_path": "data/FGADR/masks/001.png"}
-{"image_path": "data/FGADR/images/002.png", "caption": "Mild diabetic retinopathy", "mask_path": "data/FGADR/masks/002.png"}
-{"image_path": "data/FGADR/images/003.png", "caption": "3", "mask_path": null}
+{"image_path": "data/images/001.png", "caption": "Severe lesion in upper region", "mask_path": "data/masks/001.png"}
+{"image_path": "data/images/002.png", "caption": "Mild abnormality", "mask_path": "data/masks/002.png"}
+{"image_path": "data/images/003.png", "caption": "Normal tissue", "mask_path": null}
 ```
 
-字段说明：
-- `image_path`: 眼底图像路径
-- `caption`: DR 分级（0-4）或文本描述
+**字段说明**：
+- `image_path`: 医学图像路径（支持 PNG、JPG、JPEG 等格式）
+- `caption`: 文本描述或分类标签（如病变等级、病理描述等）
 - `mask_path`: 分割掩码路径（可选，null 表示仅文本模式）
 
-3. **标签转文本映射**
+### 推荐数据集示例
 
-系统自动将 DR 分级转换为病理文本：
-- 0 → "No diabetic retinopathy"
-- 1 → "Mild non-proliferative diabetic retinopathy"
-- 2 → "Moderate non-proliferative diabetic retinopathy"
-- 3 → "Severe non-proliferative diabetic retinopathy"
-- 4 → "Proliferative diabetic retinopathy"
+#### 1. 眼底图像（糖尿病视网膜病变）
+
+**FGADR 数据集**：
+- GitHub: https://github.com/csyizhou/FGADR-2842-Dataset
+- 包含 1,842 张高清眼底图和像素级病灶分割掩码
+
+**标签映射示例**（DR 分级）：
+```python
+label_to_text = {
+    0: "No diabetic retinopathy",
+    1: "Mild non-proliferative diabetic retinopathy",
+    2: "Moderate non-proliferative diabetic retinopathy",
+    3: "Severe non-proliferative diabetic retinopathy",
+    4: "Proliferative diabetic retinopathy"
+}
+```
+
+#### 2. 其他医学影像
+
+本系统同样适用于：
+- **CT 图像**：肺结节、肝脏病变等
+- **MRI 图像**：脑肿瘤、心脏病变等
+- **病理切片**：癌症组织、细胞形态等
+- **X 光图像**：骨折、肺炎等
+
+**通用标签格式**：
+```jsonl
+{"image_path": "data/ct/001.png", "caption": "Lung nodule, 5mm diameter", "mask_path": "data/ct_masks/001.png"}
+{"image_path": "data/mri/002.png", "caption": "Brain tumor, frontal lobe", "mask_path": "data/mri_masks/002.png"}
+{"image_path": "data/pathology/003.png", "caption": "Malignant cells", "mask_path": null}
+```
+
+### 数据准备步骤
+
+1. **组织数据目录**：
+```
+data/
+├── images/          # 原始医学图像
+├── masks/           # 分割掩码（可选）
+├── train.jsonl      # 训练集清单
+└── val.jsonl        # 验证集清单
+```
+
+2. **创建 JSONL 清单**：
+```python
+import json
+
+data = [
+    {"image_path": "data/images/001.png", "caption": "描述文本", "mask_path": "data/masks/001.png"},
+    # ... 更多数据
+]
+
+with open("data/train.jsonl", "w") as f:
+    for item in data:
+        f.write(json.dumps(item) + "\n")
+```
+
+3. **验证数据**：
+```bash
+python scripts/check_paths.py
+```
 
 ## 🎓 训练
 
@@ -280,18 +339,33 @@ generator = ImageGenerator(
     device="cuda"
 )
 
-# 生成图像
+# 示例 1：生成眼底图像
 image = generator.generate(
-    caption="Severe diabetic retinopathy",
+    caption="Severe diabetic retinopathy with hemorrhages",
     mask=None,  # 可选：提供分割掩码
     image_size=1024,
     num_inference_steps=50,
     guidance_scale=7.5,
     seed=42
 )
+image.save("fundus_generated.png")
 
-# 保存图像
-image.save("generated.png")
+# 示例 2：生成 CT 图像（带掩码）
+import numpy as np
+from PIL import Image
+
+# 创建或加载掩码
+mask = Image.open("data/masks/lung_nodule_mask.png")
+
+image = generator.generate(
+    caption="Lung nodule, 5mm diameter",
+    mask=mask,  # 使用掩码控制病灶位置
+    image_size=1024,
+    num_inference_steps=50,
+    guidance_scale=7.5,
+    seed=42
+)
+image.save("ct_generated.png")
 ```
 
 ## 🌐 Gradio 演示
@@ -309,9 +383,10 @@ python src/app/demo.py --checkpoint checkpoints/best_model.pth
 ### 功能
 
 - 上传分割掩码（可选）
-- 选择 DR 分级或输入自定义文本
+- 输入文本描述（如病变等级、病理描述等）
 - 调整生成参数（采样步数、引导强度、随机种子）
 - 实时生成并下载结果
+- 支持多种医学影像类型
 
 ### 创建公开链接
 
@@ -321,7 +396,7 @@ python src/app/demo.py --checkpoint checkpoints/best_model.pth --share
 
 ## 📈 下游评估
 
-### 质量评估（PSNR, SSIM）
+### 1. 图像质量评估（PSNR, SSIM）
 
 评估生成图像与参考图像的质量：
 
@@ -332,7 +407,7 @@ python evaluate.py \
     --output results/evaluation_results.json
 ```
 
-结果包含：
+**评估指标**：
 - **PSNR** (Peak Signal-to-Noise Ratio)：越高越好，通常 >30dB 表示高质量
 - **SSIM** (Structural Similarity Index)：范围 0-1，越接近 1 越好
 - **MAE** (Mean Absolute Error)：越低越好
@@ -340,10 +415,12 @@ python evaluate.py \
 
 示例输出：
 ```
+======================================================================
 EVALUATION SUMMARY
 ======================================================================
 Number of images: 100
 
+【图像质量指标】
 PSNR: 32.45 ± 2.31 dB
   Range: [28.12, 36.78]
 
@@ -355,9 +432,59 @@ MSE: 234.56 ± 45.67
 ======================================================================
 ```
 
-### 分类实验（证明增广价值）
+### 2. 结构一致性评估（Dice, IoU）
 
-使用 ResNet-50 进行 DR 分级分类：
+**重要**：评估生成图像的病灶/异常区域是否与输入掩码一致。
+
+```bash
+python evaluate.py \
+    --generated results/generated_images/ \
+    --reference data/reference_images/ \
+    --masks data/input_masks/ \
+    --evaluate-structure \
+    --output results/evaluation_results.json
+```
+
+**评估指标**：
+- **Dice Coefficient**：范围 0-1，衡量区域重叠度
+  - 1.0 = 完美匹配
+  - \>0.7 = 良好
+  - \>0.5 = 可接受
+- **IoU (Jaccard Index)**：范围 0-1，衡量交并比
+  - 1.0 = 完美匹配
+  - \>0.5 = 良好
+  - \>0.3 = 可接受
+
+示例输出：
+```
+======================================================================
+EVALUATION SUMMARY
+======================================================================
+Number of images: 100
+
+【图像质量指标】
+PSNR: 32.45 ± 2.31 dB
+SSIM: 0.8923 ± 0.0456
+
+【结构一致性指标】
+Dice Coefficient: 0.7845 ± 0.0623
+  Range: [0.6234, 0.8912]
+  (1.0 = 完美匹配, >0.7 = 良好, >0.5 = 可接受)
+
+IoU (Jaccard Index): 0.6523 ± 0.0734
+  Range: [0.4567, 0.7823]
+  (1.0 = 完美匹配, >0.5 = 良好, >0.3 = 可接受)
+======================================================================
+```
+
+**结构一致性的重要性**：
+- 验证生成的病灶区域是否忠实于输入掩码
+- 确保模型学习到了正确的空间结构
+- 对于医学影像增广至关重要（病灶位置和形状必须准确）
+
+### 3. 分类实验（证明增广价值）
+
+使用分类器（如 ResNet-50）进行下游任务评估：
 
 ```bash
 # 实验 1：仅原始数据
@@ -374,7 +501,7 @@ python train_classifier.py \
     --epochs 20
 ```
 
-### 结果分析
+### 4. 结果分析
 
 结果保存在 `results/downstream_evaluation.json`：
 
@@ -391,6 +518,24 @@ python train_classifier.py \
 ```
 
 准确率提升 2%+ 证明增广系统的价值！
+
+## 📖 评估指标详解
+
+详细的评估指标说明请参考 [docs/EVALUATION_GUIDE.md](docs/EVALUATION_GUIDE.md)，包括：
+
+- **图像质量指标**（PSNR, SSIM, MAE, MSE）的定义、计算方法和评价标准
+- **结构一致性指标**（Dice Coefficient, IoU）的定义、计算方法和评价标准
+- 病灶掩码提取方法（红色通道法、饱和度法、亮度法）
+- 评估结果解读和常见问题
+
+**快速参考**：
+
+| 指标 | 优秀 | 良好 | 可接受 | 较差 |
+|------|------|------|--------|------|
+| PSNR | >40 dB | 30-40 dB | 20-30 dB | <20 dB |
+| SSIM | >0.95 | 0.85-0.95 | 0.70-0.85 | <0.70 |
+| Dice | >0.9 | 0.7-0.9 | 0.5-0.7 | <0.5 |
+| IoU | >0.8 | 0.5-0.8 | 0.3-0.5 | <0.3 |
 
 ## 💡 简化说明
 
@@ -533,15 +678,16 @@ python scripts/rollback.py
 
 ```bibtex
 @misc{medical-image-augmentation,
-  title={Medical Image Augmentation System for Diabetic Retinopathy},
+  title={Medical Image Augmentation System with Structure Consistency Validation},
   author={Your Name},
-  year={2026}
+  year={2026},
+  note={A general-purpose medical image generation system supporting text and mask conditions}
 }
 ```
 
-基于 RetinaLogos 项目：
-- Github: https://github.com/uni-medical/retina-text2cfp
-- GitHub: https://github.com/Alpha-VLLM/Lumina-T2X
+基于以下项目：
+- RetinaLogos: https://github.com/uni-medical/retina-text2cfp
+- Lumina-T2X: https://github.com/Alpha-VLLM/Lumina-T2X
 
 
 ## ⚠️ 免责声明
