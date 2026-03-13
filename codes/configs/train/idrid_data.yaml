@@ -1,0 +1,4 @@
+META:
+  - path: "./example_data/IDRiD_data/metadata.jsonl"
+    type: "idrid_segmentation"
+    image_root: "./example_data/IDRiD_data/"

@@ -1,0 +1,54 @@
+{"image_path": "images/IDRiD_01.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_01.png"}
+{"image_path": "images/IDRiD_02.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_02.png"}
+{"image_path": "images/IDRiD_03.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_03.png"}
+{"image_path": "images/IDRiD_04.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_04.png"}
+{"image_path": "images/IDRiD_05.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_05.png"}
+{"image_path": "images/IDRiD_06.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_06.png"}
+{"image_path": "images/IDRiD_07.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_07.png"}
+{"image_path": "images/IDRiD_08.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_08.png"}
+{"image_path": "images/IDRiD_09.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_09.png"}
+{"image_path": "images/IDRiD_10.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_10.png"}
+{"image_path": "images/IDRiD_11.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_11.png"}
+{"image_path": "images/IDRiD_12.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_12.png"}
+{"image_path": "images/IDRiD_13.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_13.png"}
+{"image_path": "images/IDRiD_14.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_14.png"}
+{"image_path": "images/IDRiD_15.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_15.png"}
+{"image_path": "images/IDRiD_16.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_16.png"}
+{"image_path": "images/IDRiD_17.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_17.png"}
+{"image_path": "images/IDRiD_18.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_18.png"}
+{"image_path": "images/IDRiD_19.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_19.png"}
+{"image_path": "images/IDRiD_20.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_20.png"}
+{"image_path": "images/IDRiD_21.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_21.png"}
+{"image_path": "images/IDRiD_22.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_22.png"}
+{"image_path": "images/IDRiD_23.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_23.png"}
+{"image_path": "images/IDRiD_24.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_24.png"}
+{"image_path": "images/IDRiD_25.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_25.png"}
+{"image_path": "images/IDRiD_26.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_26.png"}
+{"image_path": "images/IDRiD_27.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_27.png"}
+{"image_path": "images/IDRiD_28.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_28.png"}
+{"image_path": "images/IDRiD_29.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_29.png"}
+{"image_path": "images/IDRiD_30.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_30.png"}
+{"image_path": "images/IDRiD_31.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_31.png"}
+{"image_path": "images/IDRiD_32.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_32.png"}
+{"image_path": "images/IDRiD_33.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_33.png"}
+{"image_path": "images/IDRiD_34.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_34.png"}
+{"image_path": "images/IDRiD_35.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_35.png"}
+{"image_path": "images/IDRiD_36.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_36.png"}
+{"image_path": "images/IDRiD_37.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_37.png"}
+{"image_path": "images/IDRiD_38.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_38.png"}
+{"image_path": "images/IDRiD_39.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_39.png"}
+{"image_path": "images/IDRiD_40.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_40.png"}
+{"image_path": "images/IDRiD_41.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_41.png"}
+{"image_path": "images/IDRiD_42.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_42.png"}
+{"image_path": "images/IDRiD_43.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_43.png"}
+{"image_path": "images/IDRiD_44.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_44.png"}
+{"image_path": "images/IDRiD_45.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates.", "mask_path": "masks/IDRiD_45.png"}
+{"image_path": "images/IDRiD_46.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_46.png"}
+{"image_path": "images/IDRiD_47.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_47.png"}
+{"image_path": "images/IDRiD_48.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_48.png"}
+{"image_path": "images/IDRiD_49.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_49.png"}
+{"image_path": "images/IDRiD_50.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_50.png"}
+{"image_path": "images/IDRiD_51.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_51.png"}
+{"image_path": "images/IDRiD_52.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_52.png"}
+{"image_path": "images/IDRiD_53.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_53.png"}
+{"image_path": "images/IDRiD_54.jpg", "caption": "Diabetic retinopathy fundus image showing microaneurysms, hard exudates, soft exudates.", "mask_path": "masks/IDRiD_54.png"}
