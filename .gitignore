@@ -1,0 +1,23 @@
+# Deep Learning Weights
+*.pth
+*.pt
+*.safetensors
+*.ckpt
+*.bin
+*.onnx
+
+# Datasets & Media
+*.mp4
+*.mov
+*.avi
+data/
+dataset/
+datasets/
+
+# Python Cache & Logs
+__pycache__/
+*.pyc
+logs/
+*.log
+*.whl
+*.gguf
