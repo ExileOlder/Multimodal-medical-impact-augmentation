@@ -3,6 +3,7 @@ import json
 import os
 import gc
 import random
+import re
 import socket
 import time
 from torchvision.transforms.functional import to_pil_image
@@ -51,6 +52,19 @@ def none_or_str(value):
     if value == "None":
         return None
     return value
+
+def slugify_for_filename(text, max_len=48):
+    text = text.strip().lower()
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    text = text.strip("-")
+    if not text:
+        return "caption"
+    return text[:max_len].rstrip("-")
+
+def count_prompt_tokens(tokenizer, text, max_length=256):
+    input_ids = tokenizer(text, truncation=False, add_special_tokens=True)["input_ids"]
+    full_count = len(input_ids)
+    return full_count, min(full_count, max_length), full_count > max_length
 
 def parse_transport_args(parser):
     group = parser.add_argument_group("Transport arguments")
@@ -103,15 +117,21 @@ def main(rank, args, master_port):
     # Set data type
     dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[args.precision]
 
-    # Initialize tokenizer and text encoder
-    tokenizer = AutoTokenizer.from_pretrained("/home/maziheng/deploy/retina-text2cfp/codes/google_gemma-2b", add_eos=True)
+    # Prefer an explicit local tokenizer/model path so local validation does not
+    # depend on external model downloads.
+    tokenizer_source = args.tokenizer_path or os.path.join(os.path.dirname(__file__), "google_gemma-2b")
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_source, add_eos=True)
     tokenizer.padding_side = "right"
-    text_encoder = AutoModel.from_pretrained("/home/maziheng/deploy/retina-text2cfp/codes/google_gemma-2b", torch_dtype=dtype, device_map="cuda").eval()
+    text_encoder = AutoModel.from_pretrained(tokenizer_source, torch_dtype=dtype, device_map="cuda").eval()
     cap_feat_dim = text_encoder.config.hidden_size
 
     # Load VAE model
     vae = AutoencoderKL.from_pretrained(
-        (f"stabilityai/sd-vae-ft-{train_args.vae}" if train_args.vae != "sdxl" else os.environ.get("RETINA_VAE_PATH","stabilityai/sdxl-vae")),
+        (
+            f"stabilityai/sd-vae-ft-{train_args.vae}"
+            if train_args.vae != "sdxl"
+            else os.environ.get("RETINA_VAE_PATH", "stabilityai/sdxl-vae")
+        ),
         torch_dtype=torch.float32,
     ).cuda()
 
@@ -234,6 +254,15 @@ def main(rank, args, master_port):
                     desc=f"Resolution {res} [GPU {rank}]",
                     disable=(rank != 0)
                 ):
+                    caption_tag = slugify_for_filename(caption)
+                    model_tag = slugify_for_filename(train_args.model, max_len=16)
+                    weight_tag = "ema" if args.ema else "raw"
+                    prompt_tokens_full, prompt_tokens_used, prompt_truncated = count_prompt_tokens(tokenizer, caption)
+                    if rank == 0:
+                        print(
+                            f"[caption {start_idx + idx}] tokens={prompt_tokens_used}/{prompt_tokens_full} "
+                            f"truncated={prompt_truncated} tag={caption_tag}"
+                        )
                     with torch.no_grad():
                         caption_list = [caption]
                         cap_feats, cap_mask = encode_prompt([caption_list] + [""], text_encoder, tokenizer, 0.0)
@@ -282,13 +311,18 @@ def main(rank, args, master_port):
                         
                         img = to_pil_image(samples[0].float())
                         idx_in_global = start_idx + idx
-                        save_filename = f"{idx_in_global}_res={res}_{seed_i}_seed={seed_val}_gpu={rank}.png"
+                        save_filename = (
+                            f"i{idx_in_global:03d}_s{seed_val}_n{args.num_sampling_steps}_"
+                            f"{args.sampling_method}_{model_tag}_{weight_tag}_{args.precision}.png"
+                        )
                         save_path = os.path.join(sample_folder_dir, current_time, "images", save_filename)
                         img.save(save_path)
                         relative_file_path = os.path.join("images", save_filename)
                         
                         # Write sampling info to JSONL file
                         item = {
+                            "caption_index": idx_in_global,
+                            "caption_tag": caption_tag,
                             "text": caption,
                             "absolute_image_path": save_path,
                             "relative_image_path": relative_file_path,
@@ -296,6 +330,9 @@ def main(rank, args, master_port):
                             "sampling_method": args.sampling_method,
                             "num_sampling_steps": args.num_sampling_steps,
                             "seed_used": seed_val,
+                            "prompt_tokens_full": prompt_tokens_full,
+                            "prompt_tokens_used": prompt_tokens_used,
+                            "prompt_truncated": prompt_truncated,
                             "time": current_time,
                             "gpu_rank": rank,
                         }
@@ -363,7 +400,7 @@ if __name__ == "__main__":
     parser.add_argument("--precision", type=str, choices=["fp32", "tf32", "fp16", "bf16"], default="bf16")
     parser.add_argument("--num_gpus", type=int, default=1)
     parser.add_argument("--ema", action="store_true", help="Use EMA models.")
-    parser.set_defaults(ema=True)
+    parser.set_defaults(ema=False)
     parser.add_argument("--image_save_path", type=str, default="samples")
     parser.add_argument("--time_shifting_factor", type=float, default=1.0)
     parser.add_argument("--caption_path", type=str, default="test_captions.txt")
