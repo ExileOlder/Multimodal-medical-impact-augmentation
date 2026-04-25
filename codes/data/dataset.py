@@ -9,10 +9,14 @@ from time import sleep
 import traceback
 import warnings
 
-import h5py
 import torch.distributed as dist
 from torch.utils.data import Dataset
 import yaml
+
+try:
+    import h5py
+except ImportError:
+    h5py = None
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +44,8 @@ class MyDataset(Dataset):
         logger.info(self.config)
 
         self.cache_on_disk = cache_on_disk
+        if self.cache_on_disk and h5py is None:
+            raise ImportError("cache_on_disk=True requires h5py, but h5py is not installed.")
         if self.cache_on_disk:
             cache_dir = self._get_cache_dir(config_path)
             if dist.get_rank() == 0:
@@ -200,4 +206,3 @@ class MyDataset(Dataset):
     def with_transform(self, transform):
         self.additional_transform = transform
         return self
-

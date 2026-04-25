@@ -127,7 +127,7 @@ class Transport:
         t = t.to(x1[0])
         return t, x0, x1
 
-    def training_losses(self, model, x1, model_kwargs=None):
+    def training_losses(self, model, x1, model_kwargs=None, return_extra=False):
         """Loss for training the score model
         Args:
         - model: backbone model; could be score, noise, or velocity
@@ -161,6 +161,13 @@ class Transport:
 
         terms["loss"] = terms["task_loss"]
         terms["task_loss"] = terms["task_loss"].clone().detach()
+        if return_extra:
+            terms["model_output"] = model_output
+            terms["xt"] = xt
+            terms["x0"] = x0
+            terms["x1"] = x1
+            terms["t"] = t
+            terms["ut"] = ut
         return terms
 
     def get_drift(self):

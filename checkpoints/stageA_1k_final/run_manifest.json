@@ -1,0 +1,24 @@
+{
+  "created_at_utc": "2026-04-24T08:09:47Z",
+  "experiment_dir": "/root/autodl-tmp/retina/retina-text2cfp/codes/results/train/mainline_stageA_global_1k_maskqc_clean_canonical_strictalign_colorstyle8_compact_frombase_colorfix/2026-04-24_16-09-47mainline_stageA_global_1k_maskqc_clean_canonical_strictalign_colorstyle8_compact_frombase_colorfix",
+  "checkpoint_dir": "/root/autodl-tmp/retina/retina-text2cfp/codes/results/train/mainline_stageA_global_1k_maskqc_clean_canonical_strictalign_colorstyle8_compact_frombase_colorfix/2026-04-24_16-09-47mainline_stageA_global_1k_maskqc_clean_canonical_strictalign_colorstyle8_compact_frombase_colorfix/checkpoints",
+  "results_dir": "/root/autodl-tmp/retina/retina-text2cfp/codes/results/train/mainline_stageA_global_1k_maskqc_clean_canonical_strictalign_colorstyle8_compact_frombase_colorfix",
+  "data_path": "/root/autodl-tmp/retina/retina-text2cfp/codes/configs/train/diabetic_merged_fullmask_clean_colorstyle8_compact.yaml",
+  "init_from": "/root/autodl-tmp/retina/retina-text2cfp/codes/../checkpoints",
+  "resume": null,
+  "model": "NextDiT_2B_GQA_patch2",
+  "vae": "sdxl",
+  "trainable_strategy": "struct_strict",
+  "image_size": 512,
+  "global_batch_size": 8,
+  "micro_batch_size": 1,
+  "precision": "bf16",
+  "text_model_path": "/root/autodl-tmp/retina/retina-text2cfp/codes/google_gemma-2b",
+  "preflight_report": "/root/autodl-tmp/retina/retina-text2cfp/codes/results/preflight/training_ready_report.json",
+  "git": {
+    "repo_root": "/root/autodl-tmp/retina",
+    "commit": "496aa2c74c3c828fe981601758b5b32768bc67ff",
+    "branch": "sync-mask-20260414",
+    "dirty": true
+  }
+}

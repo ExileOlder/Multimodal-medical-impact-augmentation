@@ -1,0 +1,4 @@
+META:
+  - path: "./data/merged/diabetic/autodl/metadata_train_full_quality_maskqc_clean_colorstyle8_compact.jsonl"
+    type: "diabetic_mask_caption"
+    image_root: "./data"

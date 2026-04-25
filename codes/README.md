@@ -1,89 +1,77 @@
-# 🔬 RetinaLogos Training Setup
+# Codes Directory
 
+`codes/` 是当前仓库的有效代码入口，已经整理为 Stage A 1K final 方案。根目录旧版 `src/` 已删除。
 
-## 📁 Directory Structure
+## Main Entrypoints
 
-```
-├── configs/
-│   ├── train/
-│   │   ├── train.sh                 # Training script
-│   │   └── data_example.yaml        # Training data configuration file
-│   └── inference/
-│       ├── inference.sh             # Inference script
-│       └── example_captions.txt     # Input text examples file
-├── example_data/
-│   ├── example_ver1.json           # Training dataset json file
-│   ├── example_ver2.json           # Training dataset json file
-│   └── images/                     # Folder for Image data
-├── results/                        # Output results (Automatically Generated)
-└── environment_RetinaLogos.yml # Environment configuration
-```
+| 文件 | 作用 |
+| --- | --- |
+| `gradio_demo.py` | 前端页面，默认选择 `../checkpoints/stageA_1k_final/adapter.pth` |
+| `inference_mask.py` | 单张 `caption + fusion mask` 推理 |
+| `train.py` | RetinaLogos 基座上的 Stage A 适配训练 |
+| `generate_eval_samples.py` | 从 holdout metadata 批量生成评估样本 |
+| `eval_structural_metrics.py` | 计算结构与颜色指标 |
+| `render_generation_comparisons.py` | 生成真实图、mask、生成图三联对照 |
+| `configs/train/run_stagea_final_1k.sh` | 最终 1K 训练复现入口 |
 
-## 🛠️ Environment Setup
+## Final Adapter
 
-```bash
-# Create conda environment
-conda env create -f environment_RetinaLogos.yml
-
-# Activate environment
-conda activate RetinaLogos
-```
-
-## 📄 Data Format
-
-Training data in JSON format (A few EyePACS dataset examples):
-
-```json
-{
-    "image": "example_data/images/27597_right.jpeg",
-    "id": "23702",
-    "width": 2592,
-    "height": 3888,
-    "caption": "Detailed medical description of the fundus photograph..."
-}
-```
-
-## 🚀 Training
-
-```bash
-# Run training
-bash configs/train/train.sh
-```
-
-### ⚙️ Training Parameters
-
-- Batch size: 8
-- Learning rate: 1e-6
-- Max steps: 400,000
-- Image size: 512x512
-- Precision: bf16
-
-## 🔮 Inference
-
-```bash
-# Run inference (supports multi-GPU)
-bash configs/inference/inference.sh
-```
-
-The script uses `configs/inference/example_captions.txt` as input text and generates images to `./results/inference_results/`. You can customize the input text file by editing the caption file path in the inference script.
-
-### 🎨 Custom Inference
-
-Edit `configs/inference/example_captions.txt` with your descriptions, with each description on a separate line in the txt file:
+默认权重在仓库根目录：
 
 ```text
-This fundus photograph captures a detailed view of the retina, showcasing its intricate structure and various landmarks. The fundus photograph reveals a clear view of the retinal surface, showcasing key structures of the eye.
+../checkpoints/stageA_1k_final/adapter.pth
 ```
 
-## 📤 Output
+该 adapter 需要配合 RetinaLogos 基座权重：
 
-- Training checkpoints: `./results/training/`
-- Generated images: `./results/inference_results/`
+```text
+../checkpoints/consolidated.00-of-01.pth
+```
 
-## 📥 Model Checkpoints
+基座权重、Gemma 文本编码器和 SDXL VAE 体积较大，不随仓库提交，需要在服务器本地放置。
 
-Model checkpoints can be downloaded from the following link:
+## Frontend
 
-**Checkpoint Download Link**: [Model](https://1drv.ms/f/c/b53a195b16c6fb0e/ErVc9gdh9ldOueaqnVoxs68BhQe5xtCxlAvg-VDs02uCDA?e=hsnnYR)
+```bash
+python gradio_demo.py --host 0.0.0.0 --port 7860
+```
 
-After downloading the checkpoint files, please place them in the appropriate directory and update the model path configuration in the inference script.
+页面已同步为 1K final 方案，并显示 `triptych_sheet_canonical.png` 作为最终评估预览。
+
+## Training
+
+```bash
+bash configs/train/run_stagea_final_1k.sh
+```
+
+默认训练参数：
+
+```text
+MAX_STEPS=1000
+COLOR_L1_WEIGHT=0.4
+LUMA_LOSS_WEIGHT=0.2
+COLOR_STAT_WEIGHT=0.1
+```
+
+继续训练到 1.5K-5K 的候选模型已经评估但未通过结构/颜色硬门槛，因此不作为默认入口。
+
+## Inference
+
+```bash
+python inference_mask.py \
+  --base_ckpt ../checkpoints \
+  --adapter_ckpt ../checkpoints/stageA_1k_final/adapter.pth \
+  --prompt "COLOR_STYLE: warm orange fundus; a color fundus photograph with clear retinal vessels." \
+  --mask_path data/train/diabetic/mask/10000_left_fusion.png \
+  --out_dir results/inference_stageA_1k_final \
+  --image_size 512 \
+  --num_sampling_steps 80 \
+  --sampling_method euler \
+  --cfg_scale 2.0 \
+  --seed 42 \
+  --precision bf16 \
+  --qk_norm \
+  --mask_scale 1.0 \
+  --tokenizer_path google_gemma-2b \
+  --local_diffusers_model_root sdxl-vae
+```

@@ -16,6 +16,14 @@ logs/
 examples/*.png
 examples/*.jpg
 
+# Keep the selected final adapter and evaluation artifacts in the repository.
+!checkpoints/
+!checkpoints/stageA_1k_final/
+!checkpoints/stageA_1k_final/adapter.pth
+!checkpoints/stageA_1k_final/*.json
+!checkpoints/stageA_1k_final/*.png
+!checkpoints/stageA_1k_final/README.md
+
 # Environment
 .env
 venv/

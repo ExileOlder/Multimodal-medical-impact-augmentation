@@ -15,14 +15,24 @@ from typing import List, Optional, Tuple
 
 import fairscale.nn.model_parallel.initialize as fs_init
 from fairscale.nn.model_parallel.layers import ColumnParallelLinear, ParallelEmbedding, RowParallelLinear
-from flash_attn import flash_attn_varlen_func
-from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 
 from .components import RMSNorm
+
+try:
+    from flash_attn import flash_attn_varlen_func
+    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
+
+    HAS_FLASH_ATTN = True
+except ImportError:
+    flash_attn_varlen_func = None
+    index_first_axis = None
+    pad_input = None
+    unpad_input = None
+    HAS_FLASH_ATTN = False
 
 
 def modulate(x, scale):
@@ -376,7 +386,7 @@ class Attention(nn.Module):
         else:
             softmax_scale = math.sqrt(1 / self.head_dim)
 
-        if dtype in [torch.float16, torch.bfloat16]:
+        if dtype in [torch.float16, torch.bfloat16] and HAS_FLASH_ATTN:
             # begin var_len flash attn
             (
                 query_states,
@@ -406,11 +416,16 @@ class Attention(nn.Module):
             # end var_len_flash_attn
 
         else:
+            xk_sdpa = xk
+            xv_sdpa = xv
+            if self.n_rep > 1:
+                xk_sdpa = xk_sdpa.unsqueeze(3).repeat(1, 1, 1, self.n_rep, 1).flatten(2, 3)
+                xv_sdpa = xv_sdpa.unsqueeze(3).repeat(1, 1, 1, self.n_rep, 1).flatten(2, 3)
             output = (
                 F.scaled_dot_product_attention(
                     xq.permute(0, 2, 1, 3),
-                    xk.permute(0, 2, 1, 3),
-                    xv.permute(0, 2, 1, 3),
+                    xk_sdpa.permute(0, 2, 1, 3),
+                    xv_sdpa.permute(0, 2, 1, 3),
                     attn_mask=x_mask.bool().view(bsz, 1, 1, seqlen).expand(-1, self.n_local_heads, seqlen, -1),
                     scale=softmax_scale,
                 )
@@ -663,6 +678,82 @@ class ParallelFinalLayer(nn.Module):
         return x
 
 
+class GatedMaskLatentAdapter(nn.Module):
+    """
+    Encode a single-channel structural mask into a latent residual that matches
+    the VAE latent shape. The final projection starts from zero so the model
+    initially behaves like the original text-only backbone, while the gate
+    starts from one to keep the branch trainable from step 1.
+    """
+
+    def __init__(self, mask_channels: int, latent_channels: int, hidden_channels: int = 32) -> None:
+        super().__init__()
+        self.mask_channels = mask_channels
+        self.encoder = nn.Sequential(
+            nn.Conv2d(mask_channels, hidden_channels, kernel_size=3, padding=1, bias=True),
+            nn.SiLU(),
+            nn.Conv2d(hidden_channels, latent_channels, kernel_size=3, padding=1, bias=True),
+        )
+        self.gate = nn.Parameter(torch.ones(1, latent_channels, 1, 1))
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        nn.init.kaiming_normal_(self.encoder[0].weight, a=0.0, mode="fan_in", nonlinearity="relu")
+        if self.encoder[0].bias is not None:
+            nn.init.zeros_(self.encoder[0].bias)
+        nn.init.zeros_(self.encoder[2].weight)
+        if self.encoder[2].bias is not None:
+            nn.init.zeros_(self.encoder[2].bias)
+        nn.init.ones_(self.gate)
+
+    def forward(self, struct_mask: torch.Tensor) -> torch.Tensor:
+        residual = self.encoder(struct_mask)
+        return residual * self.gate
+
+
+class GatedMaskPatchAdapter(nn.Module):
+    """
+    Project the structural mask directly onto the patch grid so each spatial
+    token receives an explicit geometry-aligned bias.
+    """
+
+    def __init__(self, mask_channels: int, hidden_size: int, patch_size: int) -> None:
+        super().__init__()
+        self.mask_channels = mask_channels
+        self.hidden_size = hidden_size
+        self.patch_size = patch_size
+        self.proj = nn.Conv2d(
+            mask_channels,
+            hidden_size,
+            kernel_size=patch_size,
+            stride=patch_size,
+            bias=True,
+        )
+        self.gate = nn.Parameter(torch.ones(1, hidden_size, 1, 1))
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        nn.init.zeros_(self.proj.weight)
+        if self.proj.bias is not None:
+            nn.init.zeros_(self.proj.bias)
+        nn.init.ones_(self.gate)
+
+    def forward(self, struct_mask: torch.Tensor, output_hw: Tuple[int, int]) -> torch.Tensor:
+        target_h = output_hw[0] * self.patch_size
+        target_w = output_hw[1] * self.patch_size
+        if struct_mask.shape[-2:] != (target_h, target_w):
+            struct_mask = F.interpolate(
+                struct_mask,
+                size=(target_h, target_w),
+                mode="bilinear",
+                align_corners=False,
+            )
+        tokens = self.proj(struct_mask)
+        if tokens.shape[-2:] != output_hw:
+            tokens = F.interpolate(tokens, size=output_hw, mode="bilinear", align_corners=False)
+        return tokens * self.gate
+
+
 class NextDiT(nn.Module):
     """
     Diffusion model with a Transformer backbone.
@@ -683,12 +774,14 @@ class NextDiT(nn.Module):
         qk_norm: bool = False,
         cap_feat_dim: int = 5120,
         scale_factor: float = 1.0,
+        struct_mask_channels: int = 1,
     ) -> None:
         super().__init__()
         self.learn_sigma = learn_sigma
         self.in_channels = in_channels
         self.out_channels = in_channels * 2 if learn_sigma else in_channels
         self.patch_size = patch_size
+        self.struct_mask_channels = struct_mask_channels
 
         self.x_embedder = ColumnParallelLinear(
             in_features=patch_size * patch_size * in_channels,
@@ -698,6 +791,16 @@ class NextDiT(nn.Module):
             init_method=nn.init.xavier_uniform_,
         )
         nn.init.constant_(self.x_embedder.bias, 0.0)
+
+        self.mask_latent_adapter = GatedMaskLatentAdapter(
+            mask_channels=struct_mask_channels,
+            latent_channels=in_channels,
+        )
+        self.mask_patch_adapter = GatedMaskPatchAdapter(
+            mask_channels=struct_mask_channels,
+            hidden_size=dim,
+            patch_size=patch_size,
+        )
 
         self.t_embedder = ParallelTimestepEmbedder(min(dim, 1024))
         self.cap_embedder = nn.Sequential(
@@ -741,6 +844,27 @@ class NextDiT(nn.Module):
         self.pad_token = nn.Parameter(torch.empty(dim))
         nn.init.normal_(self.pad_token, std=0.02)
 
+    def reset_mask_conditioning(self) -> None:
+        self.mask_latent_adapter.reset_parameters()
+        self.mask_patch_adapter.reset_parameters()
+
+    def apply_struct_cond(self, x: torch.Tensor, struct_mask: Optional[torch.Tensor]) -> torch.Tensor:
+        if struct_mask is None:
+            return x
+        if struct_mask.ndim != 4:
+            raise ValueError(
+                "struct_mask must be 4D "
+                f"[B, {self.struct_mask_channels}, H, W], got shape {tuple(struct_mask.shape)}"
+            )
+        if struct_mask.shape[1] != self.struct_mask_channels:
+            raise ValueError(
+                "struct_mask channel dim mismatch: "
+                f"expected {self.struct_mask_channels}, got {struct_mask.shape[1]}"
+            )
+        if struct_mask.shape[2:] != x.shape[2:]:
+            struct_mask = F.interpolate(struct_mask, size=x.shape[2:], mode="bilinear", align_corners=False)
+        return x + self.mask_latent_adapter(struct_mask)
+
     def unpatchify(self, x: torch.Tensor, img_size: List[Tuple[int, int]], return_tensor=False) -> List[torch.Tensor]:
         """
         x: (N, T, patch_size**2 * C)
@@ -769,14 +893,23 @@ class NextDiT(nn.Module):
         return imgs
 
     def patchify_and_embed(
-        self, x: List[torch.Tensor] | torch.Tensor
+        self, x: List[torch.Tensor] | torch.Tensor, struct_mask: torch.Tensor = None
     ) -> Tuple[torch.Tensor, torch.Tensor, List[Tuple[int, int]], torch.Tensor]:
         self.freqs_cis = self.freqs_cis.to(x[0].device)
+        
+        # 分支1：处理固定分辨率（Tensor输入），我们的掩码训练将走这个分支
         if isinstance(x, torch.Tensor):
             pH = pW = self.patch_size
+            x = self.apply_struct_cond(x, struct_mask)
             B, C, H, W = x.size()
             x = x.view(B, C, H // pH, pH, W // pW, pW).permute(0, 2, 4, 1, 3, 5).flatten(3)
             x = self.x_embedder(x)
+            if struct_mask is not None:
+                struct_patch_bias = self.mask_patch_adapter(
+                    struct_mask.to(dtype=x.dtype),
+                    output_hw=(H // pH, W // pW),
+                ).permute(0, 2, 3, 1)
+                x = x + struct_patch_bias
             x = x.flatten(1, 2)
 
             mask = torch.ones(x.shape[0], x.shape[1], dtype=torch.int32, device=x.device)
@@ -787,7 +920,13 @@ class NextDiT(nn.Module):
                 [(H, W)] * B,
                 self.freqs_cis[: H // pH, : W // pW].flatten(0, 1).unsqueeze(0),
             )
+            
+        # 分支2：处理变长分辨率（List[Tensor]输入），保留原版代码
         else:
+            # 拦截校验：如果当前处于带有结构掩码的训练/推理模式，且传入了变长列表，则抛出异常
+            if struct_mask is not None:
+                raise NotImplementedError("Currently, structural prior fusion does not support variable resolution list inputs. Please ensure input 'x' is a batched Tensor.")
+                
             pH = pW = self.patch_size
             x_embed = []
             freqs_cis = []
@@ -834,14 +973,15 @@ class NextDiT(nn.Module):
             freqs_cis = torch.stack(padded_freqs_cis, dim=0)
             return x_embed, mask, img_size, freqs_cis
 
-    def forward(self, x, t, cap_feats, cap_mask):
+    def forward(self, x, t, cap_feats, cap_mask, struct_mask=None): # 新增 struct_mask
         """
         Forward pass of NextDiT.
         t: (N,) tensor of diffusion timesteps
-        y: (N,) tensor of class labels
+        struct_mask: (N, 1, H, W) tensor of segmentation mask
         """
         x_is_tensor = isinstance(x, torch.Tensor)
-        x, mask, img_size, freqs_cis = self.patchify_and_embed(x)
+        # 传递 struct_mask
+        x, mask, img_size, freqs_cis = self.patchify_and_embed(x, struct_mask=struct_mask) 
         freqs_cis = freqs_cis.to(x.device)
 
         t = self.t_embedder(t)  # (N, D)
@@ -871,6 +1011,7 @@ class NextDiT(nn.Module):
         cap_feats,
         cap_mask,
         cfg_scale,
+        struct_mask=None,
         scale_factor=1.0,
         scale_watershed=1.0,
         base_seqlen: Optional[int] = None,
@@ -901,7 +1042,19 @@ class NextDiT(nn.Module):
 
         half = x[: len(x) // 2]
         combined = torch.cat([half, half], dim=0)
-        model_out = self(combined, t, cap_feats, cap_mask)
+        struct_mask_in = None
+        if struct_mask is not None:
+            if struct_mask.shape[0] == combined.shape[0]:
+                struct_mask_in = struct_mask
+            elif struct_mask.shape[0] == half.shape[0]:
+                struct_mask_in = torch.cat([struct_mask, struct_mask], dim=0)
+            else:
+                raise ValueError(
+                    f"struct_mask batch size mismatch: got {struct_mask.shape[0]}, "
+                    f"expected {half.shape[0]} or {combined.shape[0]}"
+                )
+
+        model_out = self(combined, t, cap_feats, cap_mask, struct_mask=struct_mask_in)
         # For exact reproducibility reasons, we apply classifier-free guidance on only
         # three channels by default. The standard approach to cfg applies it to all channels.
         # This can be done by uncommenting the following line and commenting-out the line following that.

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CODES_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
+PARSER_CKPT="${PARSER_CKPT:-}"
+if [ -z "${PARSER_CKPT}" ]; then
+  echo "PARSER_CKPT is required for strict alignment training." >&2
+  exit 1
+fi
+
+export FUNDUS_GEOMETRY_ALIGN="${FUNDUS_GEOMETRY_ALIGN:-1}"
+export FUNDUS_PADDING_RATIO="${FUNDUS_PADDING_RATIO:-0.01}"
+export COLOR_L1_WEIGHT="${COLOR_L1_WEIGHT:-0.20}"
+export LUMA_LOSS_WEIGHT="${LUMA_LOSS_WEIGHT:-0.10}"
+export COLOR_STAT_WEIGHT="${COLOR_STAT_WEIGHT:-0.05}"
+export COLOR_CHROMA_WEIGHT="${COLOR_CHROMA_WEIGHT:-0.0}"
+export RB_GAP_WEIGHT="${RB_GAP_WEIGHT:-0.0}"
+export PARSER_LOSS_WEIGHT="${PARSER_LOSS_WEIGHT:-1.0}"
+export PARSER_DICE_WEIGHT="${PARSER_DICE_WEIGHT:-1.0}"
+export OPTIC_DISC_WEIGHT="${OPTIC_DISC_WEIGHT:-0.5}"
+export VESSEL_WEIGHT="${VESSEL_WEIGHT:-0.5}"
+export LESION_WEIGHT="${LESION_WEIGHT:-0.75}"
+export USE_CHECKPOINTING="${USE_CHECKPOINTING:-1}"
+export MICRO_BATCH_SIZE="${MICRO_BATCH_SIZE:-1}"
+export GLOBAL_BATCH_SIZE="${GLOBAL_BATCH_SIZE:-8}"
+export NUM_WORKERS="${NUM_WORKERS:-4}"
+export PARSER_BASE_CHANNELS="${PARSER_BASE_CHANNELS:-32}"
+export TRAINABLE_STRATEGY="${TRAINABLE_STRATEGY:-struct_strict}"
+export PARSER_CKPT
+
+exec bash "${CODES_DIR}/configs/train/run_fullmask_train.sh"
