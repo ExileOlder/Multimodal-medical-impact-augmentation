@@ -29,7 +29,7 @@ unset all_proxy ALL_PROXY no_proxy NO_PROXY
 
 MASTER_PORT="${MASTER_PORT:-29531}"
 RUN_NAME="${RUN_NAME:-diabetic_merged_fullmask_4090_strict}"
-DATA_CONFIG="${DATA_CONFIG:-${CODES_DIR}/configs/train/diabetic_merged_fullmask_clean.yaml}"
+DATA_CONFIG="${DATA_CONFIG:-${CODES_DIR}/configs/train/diabetic_merged_fullmask_clean_colorstyle8_compact.yaml}"
 BASE_CKPT="${BASE_CKPT:-${CODES_DIR}/../checkpoints}"
 RESULTS_DIR="${RESULTS_DIR:-${CODES_DIR}/results/train/${RUN_NAME}}"
 MASK_SCALE="${MASK_SCALE:-2.0}"

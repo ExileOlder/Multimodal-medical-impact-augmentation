@@ -10,7 +10,6 @@
 | 训练步数 | `0001000` |
 | 基座模型 | RetinaLogos `consolidated.00-of-01.pth` |
 | 默认前端 | `codes/gradio_demo.py` |
-| 论文稿 | `基于多模态信息融合的医学影像增广系统的设计与实现_全新重写稿.md` |
 
 1K 评估指标：
 
@@ -46,8 +45,7 @@
 │   ├── triptych_sheet_canonical.png
 │   ├── args.json
 │   └── run_manifest.json
-├── requirements.txt
-└── 基于多模态信息融合的医学影像增广系统的设计与实现_全新重写稿.md
+└── requirements.txt
 ```
 
 根目录 `src/` 已移除，当前仓库以 `codes/` 作为唯一有效代码入口。
