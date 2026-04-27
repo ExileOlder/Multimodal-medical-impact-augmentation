@@ -668,7 +668,7 @@ if __name__ == "__main__":
     parser.add_argument("--vae", type=str, choices=["sdxl", "sd3", "ema", "mse"], default="sdxl")
     parser.add_argument("--tokenizer_path", type=str, default=None)
     parser.add_argument("--local_diffusers_model_root", type=str, default=None)
-    parser.add_argument("--mask_scale", type=float, default=2.0)
+    parser.add_argument("--mask_scale", type=float, default=1.0)
     parser.add_argument("--filename_prefix", type=str, default="")
     parser.add_argument("--output_name", type=str, default=None)
     parser.add_argument("--qk_norm", action="store_true")

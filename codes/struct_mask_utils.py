@@ -125,9 +125,9 @@ def infer_laterality_from_name(path_or_name: str | Path | None) -> str | None:
     if path_or_name is None:
         return None
     stem = Path(path_or_name).stem.lower()
-    if stem.endswith("_left"):
+    if stem.endswith("_left") or stem.endswith("_left_fusion"):
         return "left eye"
-    if stem.endswith("_right"):
+    if stem.endswith("_right") or stem.endswith("_right_fusion"):
         return "right eye"
     return None
 

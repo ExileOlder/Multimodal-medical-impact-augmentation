@@ -36,7 +36,7 @@ def main() -> None:
     parser.add_argument("--precision", type=str, default="bf16")
     parser.add_argument("--image_size", type=int, default=512)
     parser.add_argument("--struct_mask_channels", type=int, default=6)
-    parser.add_argument("--mask_scale", type=float, default=2.0)
+    parser.add_argument("--mask_scale", type=float, default=1.0)
     parser.add_argument("--vae", type=str, default="sdxl")
     parser.add_argument("--skip_generation", action="store_true")
     parser.add_argument("--topk", type=int, default=20)

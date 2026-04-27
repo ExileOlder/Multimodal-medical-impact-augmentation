@@ -11,6 +11,8 @@
 | `train.py` | RetinaLogos 基座上的 Stage A 适配训练 |
 | `generate_eval_samples.py` | 从 holdout metadata 批量生成评估样本 |
 | `eval_structural_metrics.py` | 计算结构与颜色指标 |
+| `compute_fid_kid.py` | 计算小样本 FID/KID 补充指标 |
+| `run_final_example20_comparison.py` | 同批 examples_20 的 base-only/Ours 生成与评估 |
 | `render_generation_comparisons.py` | 生成真实图、mask、生成图三联对照 |
 | `configs/train/run_stagea_final_1k.sh` | 最终 1K 训练复现入口 |
 
@@ -36,7 +38,8 @@
 python gradio_demo.py --host 0.0.0.0 --port 7860
 ```
 
-页面已同步为 1K final 方案，并显示 `triptych_sheet_canonical.png` 作为最终评估预览。
+页面已同步为 1K final 方案，默认加载最终 Stage A adapter。
+前端和 CLI 推理默认 `mask_scale=1.0`。
 
 ## Training
 
@@ -75,3 +78,16 @@ python inference_mask.py \
   --tokenizer_path google_gemma-2b \
   --local_diffusers_model_root sdxl-vae
 ```
+
+## Final Examples-20 Comparison
+
+```bash
+python run_final_example20_comparison.py \
+  --limit 20 \
+  --num_sampling_steps 80 \
+  --image_size 512 \
+  --mode all \
+  --out_root results/final_example20_comparison
+```
+
+该补充实验默认 `mask_scale=1.0`，并在同一批 20 个样本上计算结构/颜色指标与 FID/KID。
